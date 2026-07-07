@@ -1,0 +1,46 @@
+## Build
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio
+.vs/
+*.ncrunch*
+*.DotSettings.user
+
+## Rider
+.idea/
+
+## MAUI
+*.apk
+*.aab
+*.ipa
+*.app
+*.msix
+
+## OS
+.DS_Store
+Thumbs.db
+
+## NuGet
+*.nupkg
+**/packages/*
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## User-specific
+*.env
+appsettings.Development.json

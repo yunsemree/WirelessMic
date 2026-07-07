@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WirelessMic.App/WirelessMic.App.csproj" />
+    <Project Path="src/WirelessMic.Application/WirelessMic.Application.csproj" />
+    <Project Path="src/WirelessMic.Domain/WirelessMic.Domain.csproj" />
+    <Project Path="src/WirelessMic.Infrastructure/WirelessMic.Infrastructure.csproj" />
+    <Project Path="src/WirelessMic.Shared/WirelessMic.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WirelessMic.Tests/WirelessMic.Tests.csproj" />
+  </Folder>
+</Solution>
