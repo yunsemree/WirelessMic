@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg width="456" height="456" viewBox="0 0 456 456" xmlns="http://www.w3.org/2000/svg">
-  <path fill="#FFFFFF" d="M228 120c-44 0-80 36-80 80v56c0 44 36 80 80 80s80-36 80-80v-56c0-44-36-80-80-80zm0 40c22 0 40 18 40 40v56c0 22-18 40-40 40s-40-18-40-40v-56c0-22 18-40 40-40z"/>
+  <!-- Tema ile uyumlu kırmızı mikrofon -->
+  <g fill="none" stroke="#ff3547" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M140 214 L140 258 Q140 320 228 320 Q316 320 316 258 L316 214"/>
+    <line x1="228" y1="320" x2="228" y2="362"/>
+    <line x1="186" y1="362" x2="270" y2="362"/>
+  </g>
+  <rect x="196" y="94" width="64" height="160" rx="32" fill="#ff3547"/>
 </svg>

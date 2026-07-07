@@ -46,10 +46,13 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(DiscoverServersCommand))]
     [NotifyCanExecuteChangedFor(nameof(ConnectToServerCommand))]
+    [NotifyPropertyChangedFor(nameof(ShowRescan))]
     private bool _isPhone;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(DiscoverServersCommand))]
+    [NotifyPropertyChangedFor(nameof(ConnectionHeadline))]
+    [NotifyPropertyChangedFor(nameof(ShowRescan))]
     private bool _isDiscovering;
 
     [ObservableProperty]
@@ -61,21 +64,64 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectToServerCommand))]
     [NotifyCanExecuteChangedFor(nameof(DisconnectCommand))]
+    [NotifyPropertyChangedFor(nameof(ConnectionHeadline))]
     private DiscoveredServerDto? _selectedServer;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectToServerCommand))]
     [NotifyCanExecuteChangedFor(nameof(DisconnectCommand))]
+    [NotifyPropertyChangedFor(nameof(ConnectionHeadline))]
+    [NotifyPropertyChangedFor(nameof(IsLive))]
+    [NotifyPropertyChangedFor(nameof(IsStandby))]
+    [NotifyPropertyChangedFor(nameof(ShowRescan))]
     private bool _isConnected;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ConnectionHeadline))]
+    [NotifyPropertyChangedFor(nameof(ShowRescan))]
     private bool _isConnecting;
 
     [ObservableProperty]
     private string _latencyText = string.Empty;
 
     [ObservableProperty]
+    private string _latencyValueText = "--";
+
+    [ObservableProperty]
+    private string _localIpText = "--";
+
+    [ObservableProperty]
+    private string _bitDepthText = "16";
+
+    [ObservableProperty]
+    private bool _autoReconnectEnabled = true;
+
+    [ObservableProperty]
+    private bool _gainBoostEnabled;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsLive))]
+    [NotifyPropertyChangedFor(nameof(IsStandby))]
     private bool _isMicrophoneActive;
+
+    /// <summary>Durum kartı başlığı (ör. "Connected to PC-102").</summary>
+    public string ConnectionHeadline =>
+        IsConnected
+            ? $"Connected to {SelectedServer?.ComputerName ?? _connectionManager.RemoteHost ?? "device"}"
+            : IsConnecting
+                ? "Connecting..."
+                : IsDiscovering
+                    ? "Searching..."
+                    : "Disconnected";
+
+    /// <summary>Canlı yayın (bağlı ve mikrofon aktif) göstergesi.</summary>
+    public bool IsLive => IsConnected && IsMicrophoneActive;
+
+    /// <summary>Canlı yayın dışı durum (görsel için).</summary>
+    public bool IsStandby => !IsLive;
+
+    /// <summary>Otomatik bağlantı sonuçsuz kaldığında yeniden tarama butonu görünür.</summary>
+    public bool ShowRescan => IsPhone && !IsConnected && !IsConnecting && !IsDiscovering;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ToggleMicrophoneTestCommand))]
@@ -140,6 +186,9 @@ public partial class MainViewModel : ObservableObject
         IsPhone = role == DeviceRole.Phone;
         DeviceRoleText = role == DeviceRole.Desktop ? "Masaüstü Modu" : "Telefon Modu";
         PlatformText = platform.ToString();
+        AutoReconnectEnabled = settings.AutoReconnect;
+        LocalIpText = ResolveLocalIp();
+        BitDepthText = AudioConstants.BitsPerSample.ToString();
 
         _logger.LogInformation(
             "Uygulama başlatıldı. Rol: {Role}, Platform: {Platform}, Keşif portu: {Port}",
@@ -151,14 +200,61 @@ public partial class MainViewModel : ObservableObject
         {
             await StartDesktopServicesAsync();
         }
-        else if (settings.AutoDiscovery)
-        {
-            await DiscoverServersAsync();
-        }
         else
         {
-            StatusText = "Keşif için 'Ara' butonuna basın";
+            // Telefon: açılışta otomatik bağlanma yok. Kullanıcı merkez butona
+            // dokununca keşif + bağlanma akışı başlar.
+            StatusText = "Bağlanmak için mikrofona dokunun";
         }
+    }
+
+    /// <summary>
+    /// Telefonda açılışta ağı tarar ve bulunan ilk bilgisayara otomatik bağlanır.
+    /// Cihaz bulunamazsa kısa aralıklarla birkaç kez yeniden tarar.
+    /// </summary>
+    private async Task AutoConnectFlowAsync()
+    {
+        const int maxScans = 4;
+
+        for (var scan = 1; scan <= maxScans && !IsConnected && !IsConnecting; scan++)
+        {
+            await DiscoverServersAsync();
+
+            if (DiscoveredServers.Count > 0)
+            {
+                SelectedServer = DiscoveredServers[0];
+                await ConnectToServerAsync();
+
+                if (IsConnected)
+                    return;
+            }
+
+            if (scan < maxScans && !IsConnected)
+                await Task.Delay(1500);
+        }
+    }
+
+    private static string ResolveLocalIp()
+    {
+        try
+        {
+            using var socket = new System.Net.Sockets.Socket(
+                System.Net.Sockets.AddressFamily.InterNetwork,
+                System.Net.Sockets.SocketType.Dgram,
+                0);
+
+            // Gerçek paket göndermeden yerel yönlendirme adresini belirler.
+            socket.Connect("8.8.8.8", 65530);
+
+            if (socket.LocalEndPoint is System.Net.IPEndPoint endpoint)
+                return endpoint.Address.ToString();
+        }
+        catch
+        {
+            // Ağ yoksa sessizce geç.
+        }
+
+        return "--";
     }
 
     [RelayCommand(CanExecute = nameof(CanDiscover))]
@@ -239,19 +335,50 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    public async Task RescanAsync()
+    {
+        if (IsPhone && !IsConnecting && !IsDiscovering && !IsConnected)
+            await AutoConnectFlowAsync();
+    }
+
+    /// <summary>
+    /// Merkez mikrofon butonuna dokunulduğunda çalışır: bağlıysa bağlantıyı keser,
+    /// değilse otomatik keşif + bağlanma akışını başlatır.
+    /// </summary>
+    [RelayCommand]
+    public async Task MicTapAsync()
+    {
+        if (!IsPhone)
+            return;
+
+        if (IsConnected)
+        {
+            await DisconnectAsync();
+            return;
+        }
+
+        if (!IsConnecting && !IsDiscovering)
+            await AutoConnectFlowAsync();
+    }
+
     [RelayCommand(CanExecute = nameof(CanDisconnect))]
     public async Task DisconnectAsync()
     {
         try
         {
+            // Ses hattı teardown'ı hata verse bile bağlantı MUTLAKA kesilmeli.
             await StopAudioPipelineAsync();
             await _connectionManager.DisconnectAsync();
-            UpdateConnectionUi();
-            StatusText = "Bağlantı kesildi";
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Bağlantı kesilirken hata oluştu");
+        }
+        finally
+        {
+            UpdateConnectionUi();
+            StatusText = "Bağlantı kesildi";
         }
     }
 
@@ -325,8 +452,25 @@ public partial class MainViewModel : ObservableObject
 
     private async Task StopAudioPipelineAsync()
     {
-        await _microphoneService.StopCaptureAsync();
-        await _audioStreamService.StopAsync();
+        // Her iki servis de bağımsızca durdurulmalı; biri hata verirse diğeri etkilenmesin.
+        try
+        {
+            await _microphoneService.StopCaptureAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Mikrofon durdurulurken hata oluştu");
+        }
+
+        try
+        {
+            await _audioStreamService.StopAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Ses akışı durdurulurken hata oluştu");
+        }
+
         IsMicrophoneActive = false;
     }
 
@@ -380,5 +524,25 @@ public partial class MainViewModel : ObservableObject
     {
         var latency = _latencyMonitor.CurrentLatencyMs;
         LatencyText = latency > 0 ? $"Gecikme: {latency:F0} ms" : string.Empty;
+        LatencyValueText = latency > 0 ? $"{latency:F0}" : "--";
+    }
+
+    /// <summary>
+    /// UI zamanlayıcısı tarafından çağrılır; bağlıyken gecikme gibi gerçek zamanlı
+    /// değerleri (heartbeat aralarında da) tazeler.
+    /// </summary>
+    public void RefreshLiveStats() => UpdateLatencyText();
+
+    /// <summary>
+    /// Auto-Reconnect anahtarı değiştiğinde ayarı kalıcı olarak kaydeder.
+    /// </summary>
+    partial void OnAutoReconnectEnabledChanged(bool value)
+    {
+        var settings = _settingsService.GetSettings();
+        if (settings.AutoReconnect == value)
+            return;
+
+        settings.AutoReconnect = value;
+        _ = _settingsService.SaveSettingsAsync(settings);
     }
 }

@@ -2,13 +2,60 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
-    <Color x:Key="Primary">#512BD4</Color>
-    <Color x:Key="Secondary">#DFD8F7</Color>
+    <!-- ============ MicroStream Pro paleti (kırmızı / obsidyen) ============ -->
+    <Color x:Key="Surface">#0a1122</Color>
+    <Color x:Key="SurfaceDim">#080e1c</Color>
+    <Color x:Key="SurfaceContainerLowest">#060b18</Color>
+    <Color x:Key="SurfaceContainerLow">#0f1730</Color>
+    <Color x:Key="SurfaceContainer">#121a33</Color>
+    <Color x:Key="SurfaceContainerHigh">#17203c</Color>
+    <Color x:Key="SurfaceContainerHighest">#1e2848</Color>
+
+    <Color x:Key="OnSurface">#e7ecf7</Color>
+    <Color x:Key="OnSurfaceVariant">#8b93a7</Color>
+    <Color x:Key="Outline">#5a6376</Color>
+    <Color x:Key="OutlineVariant">#28304a</Color>
+
+    <!-- Sinyal rengi: kırmızı -->
+    <Color x:Key="Primary">#ff3547</Color>
+    <Color x:Key="PrimaryDeep">#ff1f36</Color>
+    <Color x:Key="PrimaryGlow">#ff6b78</Color>
+    <Color x:Key="OnPrimary">#ffffff</Color>
+
+    <Color x:Key="Secondary">#ff6b78</Color>
+    <Color x:Key="Tertiary">#ffb2b7</Color>
+    <Color x:Key="Error">#ff5449</Color>
+
+    <!-- Glassmorphism -->
+    <Color x:Key="GlassFill">#a60f1730</Color>
+    <Color x:Key="GlassStroke">#14ffffff</Color>
+    <Color x:Key="ChipFill">#b317203c</Color>
+
+    <!-- ============ Geriye dönük anahtarlar ============ -->
     <Color x:Key="White">#FFFFFF</Color>
     <Color x:Key="Black">#000000</Color>
-    <Color x:Key="Gray100">#E1E1E1</Color>
-    <Color x:Key="Gray200">#C8C8C8</Color>
-    <Color x:Key="Gray500">#6E6E6E</Color>
-    <Color x:Key="Gray900">#212121</Color>
+    <Color x:Key="Gray100">#1e2848</Color>
+    <Color x:Key="Gray200">#28304a</Color>
+    <Color x:Key="Gray500">#8b93a7</Color>
+    <Color x:Key="Gray900">#0a1122</Color>
+
+    <!-- ============ Fırçalar ============ -->
+    <LinearGradientBrush x:Key="PrimaryGradient" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#ff5566" Offset="0.0" />
+        <GradientStop Color="#ff1f36" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="AccentUnderline" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#ff5566" Offset="0.0" />
+        <GradientStop Color="#66ff1f36" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#0a1122" />
+    <SolidColorBrush x:Key="GlassFillBrush" Color="#a60f1730" />
+    <SolidColorBrush x:Key="GlassStrokeBrush" Color="#14ffffff" />
+    <SolidColorBrush x:Key="PrimaryBrush" Color="#ff3547" />
+    <SolidColorBrush x:Key="PrimaryGlowBrush" Color="#ff6b78" />
+    <SolidColorBrush x:Key="OutlineBrush" Color="#5a6376" />
+    <SolidColorBrush x:Key="OutlineVariantBrush" Color="#28304a" />
 
 </ResourceDictionary>

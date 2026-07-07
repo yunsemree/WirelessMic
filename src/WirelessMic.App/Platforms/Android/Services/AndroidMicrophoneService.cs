@@ -83,7 +83,16 @@ public sealed class AndroidMicrophoneService : IMicrophoneService
 
         if (_audioRecord is not null)
         {
-            _audioRecord.Stop();
+            try
+            {
+                if (_audioRecord.RecordingState == RecordState.Recording)
+                    _audioRecord.Stop();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "AudioRecord durdurulurken hata oluştu");
+            }
+
             _audioRecord.Release();
             _audioRecord.Dispose();
             _audioRecord = null;
@@ -103,17 +112,29 @@ public sealed class AndroidMicrophoneService : IMicrophoneService
     {
         var frameBuffer = new byte[AudioConstants.FrameSizeBytes];
 
-        while (!cancellationToken.IsCancellationRequested && _audioRecord is not null)
+        try
         {
-            var read = _audioRecord.Read(frameBuffer, 0, frameBuffer.Length);
-            if (read > 0)
+            while (!cancellationToken.IsCancellationRequested && _audioRecord is not null)
             {
-                FrameCaptured?.Invoke(this, frameBuffer.AsMemory(0, read));
+                var read = _audioRecord.Read(frameBuffer, 0, frameBuffer.Length);
+                if (read > 0)
+                {
+                    FrameCaptured?.Invoke(this, frameBuffer.AsMemory(0, read));
+                }
+                else
+                {
+                    await Task.Delay(5, cancellationToken);
+                }
             }
-            else
-            {
-                await Task.Delay(5, cancellationToken);
-            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Durdurma sırasında beklenen durum.
+        }
+        catch (Exception ex)
+        {
+            // Döngü hatası, StopCaptureAsync'i (dolayısıyla disconnect'i) bozmamalı.
+            _logger.LogWarning(ex, "Mikrofon yakalama döngüsünde hata oluştu");
         }
     }
 }

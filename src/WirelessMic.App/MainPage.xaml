@@ -2,118 +2,208 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewModels="clr-namespace:WirelessMic.App.ViewModels"
-             xmlns:dto="clr-namespace:WirelessMic.Application.DTO;assembly=WirelessMic.Application"
+             xmlns:ctrl="clr-namespace:WirelessMic.App.Controls"
              x:Class="WirelessMic.App.MainPage"
              x:DataType="viewModels:MainViewModel"
+             BackgroundColor="{StaticResource Surface}"
+             Shell.NavBarIsVisible="False"
              Title="{Binding Title}">
 
     <ScrollView>
-        <VerticalStackLayout Padding="24" Spacing="20">
+        <VerticalStackLayout Padding="20,18,20,28" Spacing="16">
 
-            <Label Text="{Binding Title}"
-                   Style="{StaticResource Headline}"
-                   HorizontalOptions="Center" />
+            <!-- ============ Başlık ============ -->
+            <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
+                <Border Grid.Column="0"
+                        WidthRequest="32" HeightRequest="32"
+                        StrokeThickness="0"
+                        BackgroundColor="{StaticResource Primary}"
+                        StrokeShape="RoundRectangle 9"
+                        VerticalOptions="Center">
+                    <Border WidthRequest="12" HeightRequest="16"
+                            StrokeThickness="0"
+                            BackgroundColor="{StaticResource White}"
+                            StrokeShape="RoundRectangle 6"
+                            HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+                <Label Grid.Column="1"
+                       Text="MicroStream Pro"
+                       FontFamily="InterBold"
+                       FontSize="20"
+                       TextColor="{StaticResource Primary}"
+                       VerticalOptions="Center"
+                       Margin="10,0,0,0" />
+                <Border Grid.Column="2"
+                        WidthRequest="22" HeightRequest="22"
+                        StrokeThickness="2"
+                        Stroke="{StaticResource PrimaryBrush}"
+                        BackgroundColor="Transparent"
+                        StrokeShape="Ellipse"
+                        VerticalOptions="Center">
+                    <Border WidthRequest="7" HeightRequest="7"
+                            StrokeThickness="0"
+                            BackgroundColor="{StaticResource Primary}"
+                            StrokeShape="Ellipse"
+                            HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+            </Grid>
 
-            <Border Stroke="{StaticResource Primary}"
-                    StrokeThickness="1"
-                    StrokeShape="RoundRectangle 12"
-                    Padding="20">
-                <VerticalStackLayout Spacing="12">
-                    <Label Text="{Binding DeviceRoleText}"
-                           Style="{StaticResource SubHeadline}"
-                           HorizontalOptions="Center" />
+            <!-- ============ Durum kartı ============ -->
+            <Border Style="{StaticResource GlassCard}" Padding="18,16">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+                    <VerticalStackLayout Grid.Column="0" Spacing="7">
+                        <Label Text="STATUS" Style="{StaticResource LabelCaps}" />
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" VerticalOptions="Center">
+                            <Border Grid.Column="0"
+                                    WidthRequest="9" HeightRequest="9"
+                                    StrokeThickness="0"
+                                    BackgroundColor="{StaticResource Outline}"
+                                    VerticalOptions="Start"
+                                    Margin="0,5,0,0"
+                                    StrokeShape="Ellipse">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsConnected}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                            </Border>
+                            <Label Grid.Column="1"
+                                   Text="{Binding ConnectionHeadline}"
+                                   FontFamily="InterSemiBold"
+                                   FontSize="15"
+                                   TextColor="{StaticResource OnSurface}"
+                                   LineBreakMode="WordWrap"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Grid.Column="1" Spacing="7" HorizontalOptions="End" VerticalOptions="Start">
+                        <Label Text="LOCAL IP"
+                               Style="{StaticResource LabelCaps}"
+                               HorizontalTextAlignment="End" />
+                        <Label Text="{Binding LocalIpText}"
+                               Style="{StaticResource MonoData}"
+                               TextColor="{StaticResource Primary}"
+                               HorizontalTextAlignment="End" />
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
 
-                    <Label Text="{Binding PlatformText, StringFormat='Platform: {0}'}"
-                           HorizontalOptions="Center" />
-
-                    <Label Text="{Binding StatusText}"
-                           HorizontalOptions="Center"
-                           TextColor="{StaticResource Gray500}" />
-
-                    <Label Text="{Binding LatencyText}"
-                           HorizontalOptions="Center"
-                           IsVisible="{Binding IsConnected}"
-                           TextColor="{StaticResource Primary}" />
-
-                    <Label Text="Mikrofon aktif"
-                           HorizontalOptions="Center"
-                           IsVisible="{Binding IsMicrophoneActive}"
+            <!-- ============ Görselleştirici (mobilde dokununca bağlanır) ============ -->
+            <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                <GraphicsView x:Name="Visualizer"
+                              HeightRequest="353" WidthRequest="353"
+                              HorizontalOptions="Center">
+                    <GraphicsView.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding MicTapCommand}"
+                                              Tapped="OnVisualizerTapped" />
+                    </GraphicsView.GestureRecognizers>
+                </GraphicsView>
+                <Grid HorizontalOptions="Center">
+                    <Label Text="LIVE STREAMING"
+                           Style="{StaticResource LabelCaps}"
                            TextColor="{StaticResource Primary}"
-                           FontAttributes="Bold" />
+                           HorizontalOptions="Center"
+                           IsVisible="{Binding IsLive}" />
+                    <Label Text="TAP TO CONNECT"
+                           Style="{StaticResource LabelCaps}"
+                           HorizontalOptions="Center"
+                           IsVisible="{Binding ShowRescan}" />
+                </Grid>
+            </VerticalStackLayout>
+
+            <!-- ============ İstatistik kartları ============ -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Border Grid.Column="0" Style="{StaticResource GlassCard}" Padding="16">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="LATENCY" Style="{StaticResource LabelCaps}" />
+                        <HorizontalStackLayout Spacing="4">
+                            <Label Text="{Binding LatencyValueText}"
+                                   FontFamily="InterBold" FontSize="30"
+                                   TextColor="{StaticResource Primary}" />
+                            <Label Text="ms" Style="{StaticResource BodyMuted}" VerticalOptions="End" Margin="0,0,0,6" />
+                        </HorizontalStackLayout>
+                        <Border HeightRequest="3" StrokeThickness="0"
+                                Background="{StaticResource AccentUnderline}"
+                                StrokeShape="RoundRectangle 2" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource GlassCard}" Padding="16">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="BITRATE" Style="{StaticResource LabelCaps}" />
+                        <HorizontalStackLayout Spacing="4">
+                            <Label Text="{Binding BitDepthText}"
+                                   FontFamily="InterBold" FontSize="30"
+                                   TextColor="{StaticResource Primary}" />
+                            <Label Text="bit" Style="{StaticResource BodyMuted}" VerticalOptions="End" Margin="0,0,0,6" />
+                        </HorizontalStackLayout>
+                        <Border HeightRequest="3" StrokeThickness="0"
+                                Background="{StaticResource AccentUnderline}"
+                                StrokeShape="RoundRectangle 2" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <!-- ============ Ayarlar (telefon) ============ -->
+            <Border Style="{StaticResource GlassCard}" IsVisible="{Binding IsPhone}" Padding="18,14">
+                <VerticalStackLayout Spacing="14">
+                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
+                        <Border Grid.Column="0" WidthRequest="34" HeightRequest="34"
+                                StrokeThickness="0" BackgroundColor="#33ff3547"
+                                StrokeShape="RoundRectangle 10" VerticalOptions="Center">
+                            <Border WidthRequest="12" HeightRequest="12" StrokeThickness="2"
+                                    Stroke="{StaticResource PrimaryBrush}" BackgroundColor="Transparent"
+                                    StrokeShape="Ellipse" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" Margin="12,0,0,0" VerticalOptions="Center">
+                            <Label Text="Auto-Reconnect" FontFamily="InterSemiBold" FontSize="15"
+                                   TextColor="{StaticResource OnSurface}" />
+                            <Label Text="Resume on network switch" Style="{StaticResource BodyMuted}" FontSize="12" />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="2"
+                                IsToggled="{Binding AutoReconnectEnabled}"
+                                OnColor="{StaticResource Primary}"
+                                ThumbColor="{StaticResource White}"
+                                VerticalOptions="Center" />
+                    </Grid>
+
+                    <BoxView HeightRequest="1" Color="{StaticResource OutlineVariant}" />
+
+                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
+                        <Border Grid.Column="0" WidthRequest="34" HeightRequest="34"
+                                StrokeThickness="0" BackgroundColor="#33ff3547"
+                                StrokeShape="RoundRectangle 10" VerticalOptions="Center">
+                            <Border WidthRequest="12" HeightRequest="12" StrokeThickness="2"
+                                    Stroke="{StaticResource PrimaryBrush}" BackgroundColor="Transparent"
+                                    StrokeShape="Ellipse" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" Margin="12,0,0,0" VerticalOptions="Center">
+                            <Label Text="Gain Boost" FontFamily="InterSemiBold" FontSize="15"
+                                   TextColor="{StaticResource OnSurface}" />
+                            <Label Text="+6dB software gain" Style="{StaticResource BodyMuted}" FontSize="12" />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="2"
+                                IsToggled="{Binding GainBoostEnabled}"
+                                OnColor="{StaticResource Primary}"
+                                ThumbColor="{StaticResource White}"
+                                VerticalOptions="Center" />
+                    </Grid>
                 </VerticalStackLayout>
             </Border>
 
-            <VerticalStackLayout Spacing="8" IsVisible="{Binding IsDesktop}">
-                <Label Text="Masaüstü Modu"
-                       FontAttributes="Bold" />
-                <Label Text="{Binding VirtualMicrophoneHint}"
-                       TextColor="{StaticResource Gray500}" />
-                <Button Text="{Binding MicrophoneTestButtonText}"
-                        Command="{Binding ToggleMicrophoneTestCommand}"
-                        IsEnabled="{Binding IsVbCableReady}"
-                        HorizontalOptions="Fill" />
-                <Label Text="{Binding IsListening, StringFormat='Keşif dinleyici: {0}'}"
-                       TextColor="{StaticResource Gray500}" />
-                <Label Text="{Binding ConnectedClientCount, StringFormat='Bağlı cihaz: {0}'}"
-                       TextColor="{StaticResource Gray500}" />
-            </VerticalStackLayout>
-
-            <VerticalStackLayout Spacing="12" IsVisible="{Binding IsPhone}">
-                <Label Text="Telefon Modu"
-                       FontAttributes="Bold" />
-                <Label Text="Yakındaki bilgisayarları keşfedip mikrofon olarak bağlanacaksınız."
-                       TextColor="{StaticResource Gray500}" />
-
-                <Button Text="Bilgisayarları Ara"
-                        Command="{Binding DiscoverServersCommand}"
-                        HorizontalOptions="Fill" />
-
-                <ActivityIndicator IsRunning="{Binding IsDiscovering}"
-                                   IsVisible="{Binding IsDiscovering}"
-                                   HorizontalOptions="Center" />
-
-                <Label Text="Bulunan Bilgisayarlar"
-                       FontAttributes="Bold"
-                       IsVisible="{Binding HasDiscoveredServers}" />
-
-                <CollectionView ItemsSource="{Binding DiscoveredServers}"
-                                SelectedItem="{Binding SelectedServer}"
-                                IsVisible="{Binding HasDiscoveredServers}"
-                                SelectionMode="Single">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="dto:DiscoveredServerDto">
-                            <Border Stroke="{StaticResource Gray200}"
-                                    StrokeThickness="1"
-                                    StrokeShape="RoundRectangle 8"
-                                    Padding="16"
-                                    Margin="0,4">
-                                <VerticalStackLayout Spacing="4">
-                                    <Label Text="{Binding ComputerName}"
-                                           FontAttributes="Bold" />
-                                    <Label Text="{Binding IpAddress, StringFormat='IP: {0}'}"
-                                           TextColor="{StaticResource Gray500}" />
-                                    <Label Text="{Binding Version, StringFormat='Sürüm: {0}'}"
-                                           TextColor="{StaticResource Gray500}" />
-                                </VerticalStackLayout>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-
-                <Button Text="Bağlan"
-                        Command="{Binding ConnectToServerCommand}"
-                        HorizontalOptions="Fill" />
-
-                <ActivityIndicator IsRunning="{Binding IsConnecting}"
-                                   IsVisible="{Binding IsConnecting}"
-                                   HorizontalOptions="Center" />
-
-                <Button Text="Bağlantıyı Kes"
-                        Command="{Binding DisconnectCommand}"
-                        IsVisible="{Binding IsConnected}"
-                        HorizontalOptions="Fill"
-                        BackgroundColor="{StaticResource Gray500}" />
-            </VerticalStackLayout>
+            <!-- ============ Masaüstü kartı ============ -->
+            <Border Style="{StaticResource GlassCard}" IsVisible="{Binding IsDesktop}" Padding="18,16">
+                <VerticalStackLayout Spacing="14">
+                    <Label Text="MASAÜSTÜ MODU" Style="{StaticResource LabelCaps}" />
+                    <Label Text="{Binding VirtualMicrophoneHint}" Style="{StaticResource BodyMuted}" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0" Text="BAĞLI CİHAZ" Style="{StaticResource LabelCaps}" VerticalOptions="Center" />
+                        <Label Grid.Column="1" Text="{Binding ConnectedClientCount}" Style="{StaticResource MonoData}" TextColor="{StaticResource Primary}" />
+                    </Grid>
+                    <Button Text="{Binding MicrophoneTestButtonText}"
+                            Command="{Binding ToggleMicrophoneTestCommand}"
+                            Style="{StaticResource GhostButton}" />
+                </VerticalStackLayout>
+            </Border>
 
         </VerticalStackLayout>
     </ScrollView>

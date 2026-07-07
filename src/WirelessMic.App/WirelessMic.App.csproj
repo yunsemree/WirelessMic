@@ -23,10 +23,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
-    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#0a1122" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#0a1122" BaseSize="128,128" />
     <MauiFont Include="Resources\Fonts\OpenSans-Regular.ttf" />
     <MauiFont Include="Resources\Fonts\OpenSans-Semibold.ttf" />
+    <MauiFont Include="Resources\Fonts\Inter-Regular.ttf" />
+    <MauiFont Include="Resources\Fonts\Inter-SemiBold.ttf" />
+    <MauiFont Include="Resources\Fonts\Inter-Bold.ttf" />
     <EmbeddedResource Include="appsettings.json" />
   </ItemGroup>
 

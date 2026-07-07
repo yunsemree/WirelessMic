@@ -129,10 +129,14 @@ public sealed class UdpConnectionManager : IConnectionManager
         }
 
         _sessionId = lines[1];
+
+        // Durum, heartbeat döngüsü başlatılmadan ÖNCE Connected yapılmalı; aksi halde
+        // döngü ilk kontrolünde _state == Connected olmadığından hemen çıkar ve
+        // hiç heartbeat gönderilmez (dolayısıyla gecikme de ölçülmez).
+        SetState(ConnectionState.Connected, host, "Bağlandı");
+
         _clientCts = new CancellationTokenSource();
         _heartbeatTask = HeartbeatLoopAsync(_clientCts.Token);
-
-        SetState(ConnectionState.Connected, host, "Bağlandı");
 
         _logger.LogInformation("Bağlantı kuruldu: {Host}:{Port}, Session: {SessionId}", host, port, _sessionId);
     }
@@ -378,6 +382,14 @@ public sealed class UdpConnectionManager : IConnectionManager
         if (!_clients.ContainsKey(sessionId))
             return;
 
+        // İstemci ölçtüğü RTT'yi eklediyse masaüstünde göstermek için kaydet.
+        if (lines.Length > 2
+            && double.TryParse(lines[2], System.Globalization.CultureInfo.InvariantCulture, out var clientLatencyMs)
+            && clientLatencyMs >= 0)
+        {
+            _latencyMonitor.UpdateLatency(clientLatencyMs);
+        }
+
         var response = ConnectionMessageFormatter.CreateHeartbeatAck(sessionId);
         await _server.SendAsync(response, remoteEndPoint, cancellationToken).ConfigureAwait(false);
     }
@@ -402,6 +414,7 @@ public sealed class UdpConnectionManager : IConnectionManager
     {
         var settings = _settingsService.GetSettings();
         var connection = _configuration.Connection;
+        var lastLatencyMs = -1d;
 
         while (!cancellationToken.IsCancellationRequested && _state == ConnectionState.Connected)
         {
@@ -417,7 +430,9 @@ public sealed class UdpConnectionManager : IConnectionManager
                 try
                 {
                     var heartbeatStarted = Stopwatch.GetTimestamp();
-                    var payload = ConnectionMessageFormatter.CreateHeartbeat(_sessionId);
+
+                    // Ölçülen son RTT'yi heartbeat ile birlikte gönder; sunucu bunu gösterir.
+                    var payload = ConnectionMessageFormatter.CreateHeartbeat(_sessionId, lastLatencyMs);
                     await _client.SendAsync(payload, _remoteEndpoint, cancellationToken).ConfigureAwait(false);
 
                     var response = await ReceiveMessageAsync(
@@ -440,6 +455,7 @@ public sealed class UdpConnectionManager : IConnectionManager
 
                     var latencyMs = Stopwatch.GetElapsedTime(heartbeatStarted).TotalMilliseconds;
                     _latencyMonitor.UpdateLatency(latencyMs);
+                    lastLatencyMs = latencyMs;
                 }
                 finally
                 {

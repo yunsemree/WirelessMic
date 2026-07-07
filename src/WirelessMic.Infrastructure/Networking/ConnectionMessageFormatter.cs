@@ -28,9 +28,14 @@ public static class ConnectionMessageFormatter
     public static byte[] CreatePong(long timestampTicks) =>
         Encoding.UTF8.GetBytes($"{ConnectionProtocol.Pong}\n{timestampTicks}");
 
-    /// <summary>Heartbeat mesajı oluşturur.</summary>
-    public static byte[] CreateHeartbeat(string sessionId) =>
-        Encoding.UTF8.GetBytes($"{ConnectionProtocol.Heartbeat}\n{sessionId}");
+    /// <summary>
+    /// Heartbeat mesajı oluşturur. İstemci ölçtüğü gecikmeyi (ms) ekleyebilir;
+    /// negatif değer eklenmez (geriye dönük uyumlu).
+    /// </summary>
+    public static byte[] CreateHeartbeat(string sessionId, double latencyMs = -1) =>
+        Encoding.UTF8.GetBytes(latencyMs >= 0
+            ? $"{ConnectionProtocol.Heartbeat}\n{sessionId}\n{latencyMs.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}"
+            : $"{ConnectionProtocol.Heartbeat}\n{sessionId}");
 
     /// <summary>Heartbeat onayı oluşturur.</summary>
     public static byte[] CreateHeartbeatAck(string sessionId) =>
