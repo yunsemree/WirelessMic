@@ -30,7 +30,7 @@ public sealed class AndroidMicrophoneService : IMicrophoneService
         if (IsCapturing)
             return Task.CompletedTask;
 
-        var context = Android.App.Application.Context;
+        var context = global::Android.App.Application.Context;
         var intent = new Intent(context, typeof(MicrophoneForegroundService));
         context.StartForegroundService(intent);
 
@@ -90,7 +90,7 @@ public sealed class AndroidMicrophoneService : IMicrophoneService
         _cts = null;
         _captureTask = null;
 
-        var context = Android.App.Application.Context;
+        var context = global::Android.App.Application.Context;
         context.StopService(new Intent(context, typeof(MicrophoneForegroundService)));
 
         _logger.LogInformation("Android mikrofon kaydı durduruldu.");
