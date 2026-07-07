@@ -4,7 +4,7 @@ using Android.Content.PM;
 using Android.OS;
 using AndroidX.Core.App;
 
-namespace WirelessMic.App.Platforms.Android.Services;
+namespace WirelessMic.App.Droid.Services;
 
 /// <summary>
 /// Mikrofon kaydı sırasında arka planda çalışan foreground servis.
@@ -44,7 +44,7 @@ public sealed class MicrophoneForegroundService : Service
         return new NotificationCompat.Builder(this, ChannelId)
             .SetContentTitle("WirelessMic")
             .SetContentText("Mikrofon aktif")
-            .SetSmallIcon(Resource.Mipmap.appicon)
+            .SetSmallIcon(global::WirelessMic.App.Resource.Mipmap.appicon)
             .SetOngoing(true)
             .Build();
     }

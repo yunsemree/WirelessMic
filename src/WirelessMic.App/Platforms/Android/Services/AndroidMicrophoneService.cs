@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using WirelessMic.Application.Interfaces;
 using WirelessMic.Shared.Constants;
 
-namespace WirelessMic.App.Platforms.Android.Services;
+namespace WirelessMic.App.Droid.Services;
 
 /// <summary>
 /// Android mikrofon yakalama servisi.

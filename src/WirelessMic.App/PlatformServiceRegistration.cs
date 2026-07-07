@@ -14,7 +14,7 @@ public static class PlatformServiceRegistration
     {
 #if ANDROID
         services.AddSingleton<IPermissionService, MauiPermissionService>();
-        services.AddSingleton<IMicrophoneService, Platforms.Android.Services.AndroidMicrophoneService>();
+        services.AddSingleton<IMicrophoneService, Droid.Services.AndroidMicrophoneService>();
         services.AddSingleton<IVirtualMicrophoneOutput, NoOpVirtualMicrophoneOutput>();
         services.AddSingleton<IAudioPlayer, NoOpAudioPlayer>();
 #elif WINDOWS
