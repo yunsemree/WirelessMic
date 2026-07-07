@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -5,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WirelessMic.Application.DTO;
 using WirelessMic.Application.Interfaces;
+using WirelessMic.Domain.Audio;
 using WirelessMic.Domain.Enums;
 using WirelessMic.Shared.Constants;
 
@@ -91,7 +93,7 @@ public partial class MainViewModel : ObservableObject
     private string _localIpText = "--";
 
     [ObservableProperty]
-    private string _bitDepthText = "16";
+    private string _bitrateText = "--";
 
     [ObservableProperty]
     private bool _autoReconnectEnabled = true;
@@ -129,10 +131,14 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ToggleMicrophoneTestCommand))]
+    [NotifyPropertyChangedFor(nameof(ShowVirtualMicrophoneHint))]
     private bool _isVbCableReady;
 
     [ObservableProperty]
     private string _virtualMicrophoneHint = string.Empty;
+
+    /// <summary>Masaüstü ipucu yalnızca VB-Cable eksikken (kritik uyarı) gösterilir.</summary>
+    public bool ShowVirtualMicrophoneHint => IsDesktop && !IsVbCableReady;
 
     [ObservableProperty]
     private bool _isMicrophoneTestEnabled;
@@ -187,8 +193,9 @@ public partial class MainViewModel : ObservableObject
         DeviceRoleText = role == DeviceRole.Desktop ? "Masaüstü Modu" : "Telefon Modu";
         PlatformText = platform.ToString();
         AutoReconnectEnabled = settings.AutoReconnect;
+        GainBoostEnabled = settings.GainBoost;
         LocalIpText = ResolveLocalIp();
-        BitDepthText = AudioConstants.BitsPerSample.ToString();
+        BitrateText = CalculateBitrateKbps().ToString();
 
         _logger.LogInformation(
             "Uygulama başlatıldı. Rol: {Role}, Platform: {Platform}, Keşif portu: {Port}",
@@ -432,7 +439,7 @@ public partial class MainViewModel : ObservableObject
             ConnectedClientCount = _connectionManager.ConnectedClientCount;
             StatusText = IsListening
                 ? IsVbCableReady
-                    ? $"Sanal mikrofon hazır. Keşif ({_configuration.Discovery.Port}), bağlantı ({_configuration.Connection.Port}), ses ({_configuration.Audio.StreamPort}) aktif"
+                    ? "Sanal mikrofon hazır"
                     : "VB-Cable bulunamadı — sanal mikrofon çalışmıyor"
                 : "Servisler başlatılamadı";
         }
@@ -445,9 +452,11 @@ public partial class MainViewModel : ObservableObject
 
     private void UpdateVirtualMicrophoneUi()
     {
+        // Hazır durumda teknik/log gibi uzun açıklama gösterilmez; yalnızca
+        // VB-Cable eksikse kısa ve kritik bir uyarı verilir.
         VirtualMicrophoneHint = IsVbCableReady
-            ? "Ses VB-Cable üzerinden harici mikrofon olarak aktarılır. OBS/Discord'da 'CABLE Output (VB-Audio Virtual Cable)' seçin. Hoparlörden dinlemek için mikrofon testini kullanın."
-            : "VB-Cable kurulu değil. https://vb-audio.com/Cable/ adresinden kurun ve uygulamayı yeniden başlatın.";
+            ? string.Empty
+            : "VB-Cable kurulu değil. vb-audio.com/Cable adresinden kurup uygulamayı yeniden başlatın.";
     }
 
     private async Task StopAudioPipelineAsync()
@@ -474,8 +483,32 @@ public partial class MainViewModel : ObservableObject
         IsMicrophoneActive = false;
     }
 
-    private void OnMicrophoneFrameCaptured(object? sender, ReadOnlyMemory<byte> frame) =>
-        _audioStreamService.SubmitCapturedFrame(frame.Span);
+    private void OnMicrophoneFrameCaptured(object? sender, ReadOnlyMemory<byte> frame)
+    {
+        if (!GainBoostEnabled)
+        {
+            _audioStreamService.SubmitCapturedFrame(frame.Span);
+            return;
+        }
+
+        // Kazanç yerinde uygulanacağı için karenin değiştirilebilir bir kopyası gerekir.
+        // SubmitCapturedFrame span'i eşzamanlı olarak tükettiğinden tampon hemen iade edilebilir.
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(frame.Length);
+        try
+        {
+            Span<byte> pcm = buffer.AsSpan(0, frame.Length);
+            frame.Span.CopyTo(pcm);
+            PcmGainProcessor.ApplyGainInPlace(pcm, PcmGainProcessor.GainBoostFactor);
+            _audioStreamService.SubmitCapturedFrame(pcm);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    private static int CalculateBitrateKbps() =>
+        AudioConstants.SampleRate * AudioConstants.BitsPerSample * AudioConstants.Channels / 1000;
 
     private void OnConnectionStateChanged(object? sender, ConnectionStateChangedEventArgs e)
     {
@@ -543,6 +576,21 @@ public partial class MainViewModel : ObservableObject
             return;
 
         settings.AutoReconnect = value;
+        _ = _settingsService.SaveSettingsAsync(settings);
+    }
+
+    /// <summary>
+    /// Gain Boost anahtarı değiştiğinde ayarı kalıcı olarak kaydeder. Kazanç,
+    /// bir sonraki yakalanan kareden itibaren <see cref="OnMicrophoneFrameCaptured"/>
+    /// içinde uygulanır.
+    /// </summary>
+    partial void OnGainBoostEnabledChanged(bool value)
+    {
+        var settings = _settingsService.GetSettings();
+        if (settings.GainBoost == value)
+            return;
+
+        settings.GainBoost = value;
         _ = _settingsService.SaveSettingsAsync(settings);
     }
 }

@@ -13,6 +13,8 @@ public sealed class AppSettings
 
     public bool AutoReconnect { get; set; } = true;
 
+    public bool GainBoost { get; set; } = false;
+
     public bool AutoDiscovery { get; set; } = true;
 
     public bool UseCompression { get; set; } = false;

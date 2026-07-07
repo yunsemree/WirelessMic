@@ -131,10 +131,10 @@
                     <VerticalStackLayout Spacing="8">
                         <Label Text="BITRATE" Style="{StaticResource LabelCaps}" />
                         <HorizontalStackLayout Spacing="4">
-                            <Label Text="{Binding BitDepthText}"
+                            <Label Text="{Binding BitrateText}"
                                    FontFamily="InterBold" FontSize="30"
                                    TextColor="{StaticResource Primary}" />
-                            <Label Text="bit" Style="{StaticResource BodyMuted}" VerticalOptions="End" Margin="0,0,0,6" />
+                            <Label Text="kbps" Style="{StaticResource BodyMuted}" VerticalOptions="End" Margin="0,0,0,6" />
                         </HorizontalStackLayout>
                         <Border HeightRequest="3" StrokeThickness="0"
                                 Background="{StaticResource AccentUnderline}"
@@ -194,7 +194,9 @@
             <Border Style="{StaticResource GlassCard}" IsVisible="{Binding IsDesktop}" Padding="18,16">
                 <VerticalStackLayout Spacing="14">
                     <Label Text="MASAÜSTÜ MODU" Style="{StaticResource LabelCaps}" />
-                    <Label Text="{Binding VirtualMicrophoneHint}" Style="{StaticResource BodyMuted}" />
+                    <Label Text="{Binding VirtualMicrophoneHint}"
+                           Style="{StaticResource BodyMuted}"
+                           IsVisible="{Binding ShowVirtualMicrophoneHint}" />
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Grid.Column="0" Text="BAĞLI CİHAZ" Style="{StaticResource LabelCaps}" VerticalOptions="Center" />
                         <Label Grid.Column="1" Text="{Binding ConnectedClientCount}" Style="{StaticResource MonoData}" TextColor="{StaticResource Primary}" />
