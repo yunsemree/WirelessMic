@@ -56,7 +56,10 @@ public sealed class AndroidMicrophoneService : IMicrophoneService
 
         _audioRecord.StartRecording();
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _captureTask = CaptureLoopAsync(_cts.Token);
+
+        // AudioRecord.Read bloke edicidir ve veri geldiği sürece döngü await'e ulaşmaz;
+        // UI thread'ini dondurup ANR'a yol açmamak için arka plan thread'inde çalıştırılır.
+        _captureTask = Task.Run(() => CaptureLoopAsync(_cts.Token), _cts.Token);
 
         _logger.LogInformation("Android mikrofon kaydı başlatıldı.");
         return Task.CompletedTask;
