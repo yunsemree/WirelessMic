@@ -6,9 +6,9 @@ Android veya iOS telefonunuzu yerel ağ üzerinden Windows bilgisayarınız içi
 
 - .NET 10 SDK
 - .NET MAUI workload (Android, iOS, Windows)
-- Visual Studio 2022 veya Rider
+- Visual Studio 2026 veya Rider
 
-## Çözüm Yapısı
+## Solution Yapısı
 
 ```
 WirelessMic.sln
